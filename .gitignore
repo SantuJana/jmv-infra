@@ -1,0 +1,14 @@
+.env
+node_modules
+dist
+coverage
+logs
+*.log
+*.env
+.DS_Store
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
