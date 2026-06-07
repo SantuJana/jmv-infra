@@ -11,8 +11,27 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
+      - API_BASE_URL=${API_BASE_URL}
+      - API_PREFIX=${API_PREFIX}
       - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_ACCESS_EXPIRES_IN=${JWT_ACCESS_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_NAME=${ADMIN_NAME}
+      - ADMIN_PHONE=${ADMIN_PHONE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - internal
     deploy:
@@ -41,6 +60,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
     networks:
       - internal
     depends_on:
@@ -63,6 +83,50 @@ services:
       retries: 3
       start_period: 15s
 
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-jmv}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-jmv_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-jmv_db}
+      - PGDATA=/var/lib/postgresql/18/docker
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - '5432:5432'
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-jmv} -d ${POSTGRES_DB:-jmv_db} -h localhost']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:8
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 networks:
   internal:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
